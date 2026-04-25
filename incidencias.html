@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Incidencias">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e293b">
+<link id="pwa-manifest" rel="manifest">
+<title>Incidencias Hotel</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({ appId: "ee6e5a9c-4ee1-45ff-b37a-13c872328a4a" });
+  });
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #e2e8f0;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --accent: #3b82f6;
+  --accent2: #1d4ed8;
+  --green: #22c55e;
+  --orange: #f97316;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100svh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ---- LOGIN ---- */
+#login-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: radial-gradient(ellipse at 50% 0%, #1e3a5f 0%, #0f172a 70%);
+}
+
+.login-logo {
+  width: 72px; height: 72px;
+  background: var(--accent);
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 36px rgba(59,130,246,0.4);
+}
+
+.login-title { font-size: 26px; font-weight: 700; margin-bottom: 4px; color: #ffffff; }
+.login-sub { color: rgba(255,255,255,0.65); font-size: 14px; margin-bottom: 36px; }
+
+/* Selector desplegable */
+.user-selector-wrap {
+  width: 100%;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.user-selector-trigger {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 15px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.15s;
+}
+.user-selector-trigger:hover, .user-selector-trigger.open { border-color: var(--accent); }
+.user-selector-trigger .arrow { color: var(--text3); font-size: 12px; transition: transform 0.2s; }
+.user-selector-trigger.open .arrow { transform: rotate(180deg); }
+
+.user-list {
+  display: none;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.user-list.open { display: flex; }
+
+.user-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  color: var(--text);
+  font-size: 15px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  width: 100%; text-align: left;
+}
+.user-btn:last-child { border-bottom: none; }
+.user-btn:hover { background: var(--surface2); }
+
+.user-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+
+/* PIN */
+.pin-section { width: 100%; }
+.pin-label { color: var(--text2); font-size: 13px; margin-bottom: 14px; text-align: center; font-weight: 500; }
+.pin-dots { display: flex; gap: 14px; justify-content: center; margin-bottom: 28px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--border); transition: all 0.15s;
+}
+.pin-dot.filled { background: var(--accent); transform: scale(1.2); }
+
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pin-key {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  font-size: 22px; font-weight: 600;
+  text-align: center; cursor: pointer;
+  transition: all 0.1s;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  user-select: none;
+}
+.pin-key:active { background: var(--accent); border-color: var(--accent); transform: scale(0.95); }
+.pin-error { color: var(--red); text-align: center; font-size: 13px; margin-top: 10px; min-height: 20px; }
+
+/* ---- MAIN APP ---- */
+#app-screen { display: none; height: 100svh; flex-direction: column; overflow: hidden; }
+
+/* Header */
+.app-header {
+  background: #3b82f6;
+  padding: 20px 20px 28px;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px;
+}
+.header-greeting { font-size: 22px; font-weight: 800; color: #ffffff; }
+.header-dept { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+.notif-btn {
+  position: relative;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+}
+.notif-badge {
+  position: absolute; top: -4px; right: -4px;
+  background: var(--red);
+  color: white; font-size: 10px; font-weight: 700;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+
+.logout-btn {
+  background: transparent; border: none;
+  color: rgba(255,255,255,0.5); font-size: 18px; cursor: pointer; padding: 4px;
+}
+
+/* Content */
+.app-content { flex: 1; overflow-y: auto; padding-bottom: 80px; min-height: 0; }
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+  display: flex;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex: 1; padding: 12px 4px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; transition: all 0.15s;
+  border: none; background: transparent; color: var(--text3);
+  font-family: 'DM Sans', sans-serif;
+  position: relative;
+}
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 22px; }
+.nav-label { font-size: 10px; font-weight: 500; }
+.nav-badge {
+  position: absolute; top: 8px; right: calc(50% - 18px);
+  background: var(--red); color: white;
+  font-size: 9px; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px;
+}
+
+/* Tabs */
+.tab-header {
+  display: flex; gap: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+}
+.tab-btn {
+  padding: 14px 16px;
+  font-size: 13px; font-weight: 600;
+  color: var(--text3);
+  border: none; background: transparent;
+  border-bottom: 2px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Cards */
+.page { padding: 16px; }
+
+.incident-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.incident-card:hover { border-color: var(--accent); }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.card-dept {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.card-time { font-size: 12px; color: var(--text3); }
+.card-desc { font-size: 14px; color: var(--text); line-height: 1.5; margin-bottom: 10px; }
+.card-bottom { display: flex; justify-content: space-between; align-items: center; }
+.card-author { font-size: 12px; color: var(--text2); }
+.card-status {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 10px; border-radius: 20px;
+}
+.card-photos { display: flex; gap: 6px; margin-bottom: 10px; }
+.card-photo { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--surface2); }
+
+/* Status colors */
+.status-abierta { background: rgba(239,68,68,0.15); color: #ef4444; }
+.status-en_proceso { background: rgba(234,179,8,0.15); color: #eab308; }
+.status-resuelta { background: rgba(34,197,94,0.15); color: #22c55e; }
+
+/* Dept colors */
+.dept-recepcion { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.dept-mantenimiento { background: rgba(249,115,22,0.15); color: #fb923c; }
+.dept-housekeeping { background: rgba(168,85,247,0.15); color: #c084fc; }
+.dept-direccion { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+.dept-fb { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  right: calc(50% - 220px);
+  width: 56px; height: 56px;
+  background: var(--accent);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.5);
+  transition: all 0.2s;
+  z-index: 99;
+  border: none; color: white;
+}
+.fab:hover { transform: scale(1.05); background: var(--accent2); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  width: 100%; max-width: 480px;
+  max-height: 92svh;
+  overflow-y: auto;
+  padding: 24px 20px 32px;
+  animation: slideUp 0.3s ease;
+}
+.modal-full {
+  border-radius: 24px 24px 0 0;
+  max-height: 96svh;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+.modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+/* Form */
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 8px; display: block; }
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: none; min-height: 100px; }
+.form-select option { background: var(--surface); }
+
+/* Dept selector */
+.dept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dept-option {
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 13px; font-weight: 500;
+  background: var(--surface2);
+}
+.dept-option.selected { border-color: currentColor; background: transparent; }
+.dept-option .dept-emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+
+/* Photo upload */
+.photo-row { display: flex; gap: 10px; }
+.photo-slot {
+  width: 90px; height: 90px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 28px;
+  transition: all 0.15s; flex-shrink: 0;
+  position: relative; overflow: hidden;
+  background: var(--surface2);
+}
+.photo-slot:hover { border-color: var(--accent); }
+.photo-slot img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.photo-slot .remove-photo {
+  position: absolute; top: 4px; right: 4px;
+  background: var(--red); color: white;
+  border-radius: 50%; width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+
+/* Buttons */
+.btn {
+  width: 100%; padding: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 600;
+  border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-success { background: var(--green); color: white; }
+.btn-warning { background: var(--yellow); color: #000; }
+.btn-danger { background: var(--red); color: white; }
+
+.btn-row { display: flex; gap: 8px; margin-top: 16px; }
+.btn-row .btn { flex: 1; }
+
+/* Detail modal */
+.detail-photos { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
+.detail-photo { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+.detail-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.detail-desc { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 20px; }
+.detail-section { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Comments */
+.comment {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.comment-author { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+.comment-text { font-size: 14px; color: var(--text); }
+.comment-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+.comment-input-row { display: flex; gap: 8px; margin-top: 12px; }
+.comment-input-row .form-input { flex: 1; }
+.comment-send {
+  background: var(--accent); color: white;
+  border: none; border-radius: 10px;
+  padding: 12px 16px; cursor: pointer; font-size: 16px;
+}
+
+/* Notifications panel */
+.notif-item {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 12px; align-items: flex-start;
+  cursor: pointer;
+}
+.notif-item.unread { background: rgba(59,130,246,0.05); }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; }
+.notif-dot.read { background: transparent; }
+.notif-text { font-size: 14px; color: var(--text); line-height: 1.4; }
+.notif-time { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+/* Admin */
+.admin-user-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+.admin-user-info { flex: 1; }
+.admin-user-name { font-weight: 600; font-size: 15px; }
+.admin-user-dept { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.admin-actions { display: flex; gap: 8px; }
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px;
+}
+
+/* Empty state */
+.empty {
+  text-align: center; padding: 60px 20px;
+  color: var(--text3);
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 15px; }
+
+/* Loading */
+.loading {
+  text-align: center; padding: 40px;
+  color: var(--text3); font-size: 14px;
+}
+
+/* Toast */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 14px; font-weight: 500;
+  z-index: 9999;
+  animation: toastIn 0.3s ease;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+@keyframes toastIn {
+  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* Filter bar */
+.filter-bar {
+  display: flex; gap: 8px; padding: 12px 16px;
+  overflow-x: auto; border-bottom: 1px solid var(--border);
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-chip {
+  padding: 6px 14px; border-radius: 20px;
+  border: 1.5px solid var(--border);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  background: transparent; color: var(--text2);
+  transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.filter-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.1); }
+
+/* Dashboard */
+.dash-page {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.dash-nueva-btn {
+  width: 100%; background: #3b82f6;
+  color: white; border: none; border-radius: 14px;
+  padding: 13px; font-size: 16px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  cursor: pointer; margin-bottom: 10px; flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.dash-nueva-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(59,130,246,0.2); }
+
+.dash-widgets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.dash-widget {
+  border-radius: 16px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.12s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  min-height: 0;
+}
+.dash-widget:active { transform: scale(0.96); }
+
+.dash-widget-dept {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  text-align: left;
+  padding: 12px 14px;
+  min-height: auto;
+}
+
+.dash-widget-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+
+.dash-widget-num {
+  font-size: 26px; font-weight: 800; line-height: 1;
+  font-family: 'DM Mono', monospace;
+}
+
+.dash-widget-label {
+  font-size: 12px; font-weight: 600; color: #64748b;
+}
+
+/* Skeleton loader */
+.dash-skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  cursor: default;
+  min-height: 0;
+}
+.dash-skeleton:active { transform: none; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Dept stat cards (3 en horizontal) */
+.dept-stat-card {
+  flex: 1;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex; flex-direction: row;
+  align-items: center; justify-content: flex-start;
+  gap: 14px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  transition: transform 0.12s;
+  min-height: 0;
+  overflow: hidden;
+}
+.dept-stat-card:active { transform: scale(0.98); }
+.dept-stat-card .dept-stat-info { display: flex; flex-direction: column; gap: 2px; }
+.dept-stat-card:active { transform: scale(0.96); }
+.dept-stat-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.dept-stat-num {
+  font-size: 30px; font-weight: 800; line-height: 1;
+  font-family: 'DM Mono', monospace;
+}
+.dept-stat-label {
+  font-size: 13px; font-weight: 600; color: #64748b;
+}
+.dept-stat-skeleton {
+  flex: 1; min-height: 0; border-radius: 18px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+/* Lightbox */
+#lightbox {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.95);
+  align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+#lightbox-close {
+  position: absolute; top: 16px; right: 16px;
+  background: rgba(255,255,255,0.15); border: none;
+  color: white; font-size: 22px; width: 40px; height: 40px;
+  border-radius: 50%; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+.hidden { display: none !important; }
+.flex { display: flex; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">🏨</div>
+  <div class="login-title">Incidencias</div>
+  <div class="login-sub">Sistema de gestión hotelera</div>
+
+  <!-- Selector desplegable -->
+  <div class="user-selector-wrap" id="user-select-section">
+    <button class="user-selector-trigger" id="user-trigger" onclick="toggleUserDropdown()">
+      <span id="user-trigger-label">Seleccionar usuario</span>
+      <span class="arrow">▼</span>
+    </button>
+    <div class="user-list" id="user-list">
+      <div class="loading" style="padding:12px 16px">Cargando...</div>
+    </div>
+  </div>
+
+  <!-- PIN -->
+  <div class="pin-section" id="pin-section" style="display:none;width:100%">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <button onclick="backToUsers()" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text2);cursor:pointer;font-size:14px;font-family:DM Sans,sans-serif">← Volver</button>
+      <div class="pin-label" id="pin-label" style="margin:0;flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--text2)">Introduce tu PIN</div>
+    </div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="dot0"></div>
+      <div class="pin-dot" id="dot1"></div>
+      <div class="pin-dot" id="dot2"></div>
+      <div class="pin-dot" id="dot3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="pinClear()">⌫</button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key" onclick="pinBack()">←</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="header-top">
+      <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.75);letter-spacing:0.3px">Hotel Incidencias</div>
+      <button class="logout-btn" onclick="logout()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px">⏻</button>
+    </div>
+    <div class="header-greeting" id="header-name"></div>
+    <div class="header-dept" id="header-dept"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="app-content" id="app-content"></div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" onclick="showPage('todas')" id="nav-todas">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Inicio</span>
+    </button>
+    <button class="nav-item" onclick="loadNotificacionesPage()" id="nav-notif">
+      <span class="nav-icon">🔔</span>
+      <span class="nav-label">Avisos</span>
+      <span class="nav-badge hidden" id="nav-badge-notif"></span>
+    </button>
+    <button class="nav-item" onclick="onConfigClick()" id="nav-config">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Config</span>
+    </button>
+  </div>
+</div>
+
+<!-- MODAL: Nueva Incidencia -->
+<div class="modal-overlay" id="modal-nueva">
+  <div class="modal modal-full">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📝 Nueva Incidencia</div>
+
+    <div class="form-group">
+      <label class="form-label">Local / Ubicación *</label>
+      <input class="form-input" id="nueva-local" placeholder="Ej: Habitación 201, Recepción, Piscina...">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Descripción *</label>
+      <textarea class="form-textarea" id="nueva-desc" placeholder="Describe la incidencia con detalle..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Destinatario *</label>
+      <div class="dept-grid">
+        <div class="dept-option dept-recepcion" onclick="selectDept('recepcion')" id="opt-recepcion">
+          <span class="dept-emoji">🛎️</span>Recepción
+        </div>
+        <div class="dept-option dept-mantenimiento" onclick="selectDept('mantenimiento')" id="opt-mantenimiento">
+          <span class="dept-emoji">🔧</span>Mantenimiento
+        </div>
+        <div class="dept-option dept-housekeeping" onclick="selectDept('housekeeping')" id="opt-housekeeping">
+          <span class="dept-emoji">🧹</span>Housekeeping
+        </div>
+        <div class="dept-option dept-direccion" onclick="selectDept('direccion')" id="opt-direccion">
+          <span class="dept-emoji">👔</span>Dirección
+        </div>
+        <div class="dept-option dept-fb" onclick="selectDept('fb')" id="opt-fb">
+          <span class="dept-emoji">🍽️</span>F&B
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Fotos (máx. 3)</label>
+      <div class="photo-row">
+        <div class="photo-slot" id="slot0" onclick="triggerPhoto(0)">📷</div>
+        <div class="photo-slot" id="slot1" onclick="triggerPhoto(1)">📷</div>
+        <div class="photo-slot" id="slot2" onclick="triggerPhoto(2)">📷</div>
+      </div>
+      <input type="file" id="photo-input-cam" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event,'cam')">
+      <input type="file" id="photo-input-gal" accept="image/*" style="display:none" onchange="handlePhoto(event,'gal')">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('modal-nueva')">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitIncident()" id="btn-submit">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Detalle Incidencia -->
+<div class="modal-overlay" id="modal-detalle">
+  <div class="modal modal-full">
+    <div class="modal-handle"></div>
+    <div id="detalle-content"></div>
+  </div>
+</div>
+
+<!-- MODAL: Admin - Nuevo Usuario -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-usuario-title">Nuevo Usuario</div>
+    <input type="hidden" id="edit-user-id">
+
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" id="user-nombre" placeholder="Nombre del usuario">
+    </div>
+    <div class="form-group">
+      <label class="form-label">PIN (4 dígitos)</label>
+      <input class="form-input" id="user-pin" type="number" placeholder="0000" maxlength="4">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Departamento</label>
+      <select class="form-select" id="user-dept">
+        <option value="recepcion">🛎️ Recepción</option>
+        <option value="mantenimiento">🔧 Mantenimiento</option>
+        <option value="housekeeping">🧹 Housekeeping</option>
+        <option value="direccion">👔 Dirección</option>
+        <option value="fb">🍽️ F&B</option>
+        <option value="admin">⚙️ Admin</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUser()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Notificaciones -->
+<div class="modal-overlay" id="modal-notificaciones">
+  <div class="modal modal-full">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin:0">🔔 Notificaciones</div>
+      <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px" onclick="markAllRead()">Marcar todas leídas</button>
+    </div>
+    <div id="notif-list"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SUPABASE CONFIG
+// ============================================================
+const SUPABASE_URL = 'https://tkqxrjhbolauquirmojc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_efS_3aNiJS9MiYcxd6lzSw_a8fxonOm';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ============================================================
+// STATE
+// ============================================================
+let currentUser = null;
+let allUsers = [];
+let selectedLoginUser = null;
+let pinValue = '';
+let selectedDept = null;
+let photos = [null, null, null]; // cada item: { file: File, preview: string } o null
+let currentPhotoSlot = 0;
+let currentIncidentId = null;
+let currentPageState = { page: 'dashboard' }; // rastrea la vista actual
+let filterStatus = 'todas';
+let realtimeChannel = null;
+
+// ============================================================
+// DEPT HELPERS
+// ============================================================
+const DEPT_LABELS = {
+  recepcion: '🛎️ Recepción',
+  mantenimiento: '🔧 Mantenimiento',
+  housekeeping: '🧹 Housekeeping',
+  direccion: '👔 Dirección',
+  fb: '🍽️ F&B',
+  admin: '⚙️ Admin'
+};
+const DEPT_COLORS = {
+  recepcion: '#60a5fa',
+  mantenimiento: '#fb923c',
+  housekeeping: '#c084fc',
+  direccion: '#2dd4bf',
+  fb: '#f59e0b',
+  admin: '#94a3b8'
+};
+const DEPT_EMOJIS = { recepcion:'🛎️', mantenimiento:'🔧', housekeeping:'🧹', direccion:'👔', fb:'🍽️', admin:'⚙️' };
+
+function deptLabel(d) { return DEPT_LABELS[d] || d; }
+function deptColor(d) { return DEPT_COLORS[d] || '#94a3b8'; }
+function avatarColor(d) {
+  const colors = { recepcion:'#1d4ed8', mantenimiento:'#c2410c', housekeeping:'#7e22ce', direccion:'#0f766e', fb:'#b45309', admin:'#475569' };
+  return colors[d] || '#475569';
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'ahora mismo';
+  if (m < 60) return `hace ${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h / 24);
+  return `hace ${d}d`;
+}
+
+function fmtDateTime(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const dia = String(d.getDate()).padStart(2,'0');
+  const mes = String(d.getMonth()+1).padStart(2,'0');
+  const año = d.getFullYear();
+  const h = String(d.getHours()).padStart(2,'0');
+  const min = String(d.getMinutes()).padStart(2,'0');
+  return `${dia}/${mes}/${año} ${h}:${min}`;
+}
+
+// ============================================================
+// LOGIN
+// ============================================================
+async function loadUsers() {
+  const { data, error } = await db.from('usuarios').select('*').eq('activo', true).order('nombre');
+  if (error) { document.getElementById('user-list').innerHTML = '<div style="color:var(--red);text-align:center">Error cargando usuarios</div>'; return; }
+  allUsers = data;
+  renderUserList();
+}
+
+function renderUserList() {
+  const el = document.getElementById('user-list');
+  if (!allUsers.length) { el.innerHTML = '<div class="empty"><div>Sin usuarios aún</div></div>'; return; }
+  el.innerHTML = allUsers.map(u => `
+    <button class="user-btn ${selectedLoginUser?.id === u.id ? 'selected' : ''}" onclick="selectUser('${u.id}')">
+      <div class="user-avatar" style="background:${avatarColor(u.departamento)};color:white">
+        ${u.nombre.charAt(0).toUpperCase()}
+      </div>
+      <div>
+        <div style="font-weight:600">${u.nombre}</div>
+        <div style="font-size:12px;color:var(--text2)">${deptLabel(u.departamento)}</div>
+      </div>
+    </button>
+  `).join('');
+}
+
+function toggleUserDropdown() {
+  const list = document.getElementById('user-list');
+  const trigger = document.getElementById('user-trigger');
+  const isOpen = list.classList.contains('open');
+  list.classList.toggle('open', !isOpen);
+  trigger.classList.toggle('open', !isOpen);
+}
+
+function backToUsers() {
+  document.getElementById('pin-section').style.display = 'none';
+  document.getElementById('user-select-section').style.display = 'block';
+  document.getElementById('user-trigger-label').textContent = 'Seleccionar usuario';
+  document.getElementById('user-trigger').classList.remove('open');
+  document.getElementById('user-list').classList.remove('open');
+  selectedLoginUser = null;
+  pinValue = '';
+  renderUserList();
+}
+
+function selectUser(id) {
+  selectedLoginUser = allUsers.find(u => u.id === id);
+  pinValue = '';
+  // Update trigger label and close dropdown
+  document.getElementById('user-trigger-label').textContent = selectedLoginUser.nombre;
+  document.getElementById('user-list').classList.remove('open');
+  document.getElementById('user-trigger').classList.remove('open');
+  // Show PIN
+  document.getElementById('user-select-section').style.display = 'none';
+  document.getElementById('pin-section').style.display = 'block';
+  document.getElementById('pin-label').textContent = `PIN de ${selectedLoginUser.nombre}`;
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function pinPress(digit) {
+  if (pinValue.length >= 4) return;
+  pinValue += digit;
+  updatePinDots();
+  if (pinValue.length === 4) setTimeout(checkPin, 100);
+}
+function pinBack() { pinValue = pinValue.slice(0, -1); updatePinDots(); }
+function pinClear() { pinValue = ''; updatePinDots(); }
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`dot${i}`).classList.toggle('filled', i < pinValue.length);
+  }
+}
+
+async function checkPin() {
+  if (pinValue === selectedLoginUser.pin) {
+    currentUser = selectedLoginUser;
+    enterApp();
+  } else {
+    document.getElementById('pin-error').textContent = 'PIN incorrecto';
+    pinValue = '';
+    updatePinDots();
+    setTimeout(() => document.getElementById('pin-error').textContent = '', 2000);
+  }
+}
+
+function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.flexDirection = 'column';
+
+  // Header
+  document.getElementById('header-name').textContent = 'Hola, ' + currentUser.nombre;
+  document.getElementById('header-dept').textContent = deptLabel(currentUser.departamento);
+
+  loadTodasPage();
+  loadNotifCount();
+  setupRealtime();
+
+}
+
+function logout() {
+  currentUser = null; selectedLoginUser = null; pinValue = '';
+  if (realtimeChannel) db.removeChannel(realtimeChannel);
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pin-section').style.display = 'none';
+  document.getElementById('user-select-section').style.display = 'block';
+  document.getElementById('user-trigger-label').textContent = 'Seleccionar usuario';
+  document.getElementById('user-trigger').classList.remove('open');
+  document.getElementById('user-list').classList.remove('open');
+  renderUserList();
+}
+
+// ============================================================
+// REALTIME
+// ============================================================
+
+
+
+
+
+
+function setupRealtime() {
+  realtimeChannel = db.channel('incidencias-changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'incidencias' }, () => {
+      refreshCurrentPage();
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'incidencias' }, () => {
+      refreshCurrentPage();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'incidencias' }, () => {
+      refreshCurrentPage();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones' }, () => {
+      loadNotifCount();
+    })
+    .subscribe();
+}
+
+function refreshCurrentPage() {
+  const p = currentPageState;
+  if (!p) return;
+  const modalOpen = currentIncidentId && document.getElementById('modal-detalle').classList.contains('open');
+  if (modalOpen) openDetail(currentIncidentId);
+  if (p.page === 'dashboard') loadTodasPage();
+  else if (p.page === 'lista') renderIncidentsList();
+  else if (p.page === 'mis') loadMisPage();
+  else if (p.page === 'dept') loadDeptPage();
+  else if (p.page === 'dept-lista') loadDeptLista(p.estado);
+  loadNotifCount();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(page) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const navEl = document.getElementById(`nav-${page}`);
+  if (navEl) navEl.classList.add('active');
+  if (page === 'todas') loadTodasPage();
+  else if (page === 'mis') loadMisPage();
+  else if (page === 'nueva') openNewIncident();
+  else if (page === 'notificaciones') { loadNotificacionesPage(); return; }
+  else if (page === 'admin') { document.getElementById('nav-config').classList.add('active'); loadAdminPage(); }
+}
+
+// Config: solo admin puede entrar
+function onConfigClick() {
+  if (currentUser.departamento === 'admin') {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('nav-config').classList.add('active');
+    loadAdminPage();
+  } else {
+    showToast('Solo el administrador puede acceder a esta sección');
+  }
+}
+
+// ============================================================
+// DASHBOARD (página principal)
+// ============================================================
+async function loadTodasPage() {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-todas').classList.add('active');
+  currentPageState = { page: 'dashboard' };
+
+  const content = document.getElementById('app-content');
+  // Mostrar skeleton inmediato
+  content.style.overflowY = 'hidden';
+  content.innerHTML = `<div id="dashboard-content" class="dash-page">
+    <button class="dash-nueva-btn" onclick="openNewIncident()">
+      <span style="font-size:18px;font-weight:400">＋</span><span>Nueva Incidencia</span>
+    </button>
+    <div class="dash-widgets-grid" id="dash-widgets">
+      <div class="dash-widget dash-skeleton"></div>
+      <div class="dash-widget dash-skeleton"></div>
+      <div class="dash-widget dash-skeleton"></div>
+      <div class="dash-widget dash-skeleton"></div>
+      <div class="dash-widget dash-skeleton" style="grid-column:1/-1"></div>
+    </div>
+  </div>`;
+
+  // Cargar todos los contadores en paralelo (una sola ronda)
+  const dept = currentUser.departamento;
+  const [total, abiertas, proceso, resueltas, deptPend, deptProc, deptRes] = await Promise.all([
+    db.from('incidencias').select('*', { count: 'exact', head: true }),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('estado', 'abierta'),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('estado', 'en_proceso'),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('estado', 'resuelta'),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('destinatario', dept).eq('estado', 'abierta'),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('destinatario', dept).eq('estado', 'en_proceso'),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('destinatario', dept).eq('estado', 'resuelta'),
+  ]);
+
+  const grid = document.getElementById('dash-widgets');
+  if (!grid) return;
+  grid.innerHTML = `
+    <div class="dash-widget" style="background:#fefce8;border:1.5px solid #fef08a" onclick="loadListaFiltrada('abierta')">
+      <div class="dash-widget-icon" style="background:#fef9c3;color:#ca8a04">🕐</div>
+      <div class="dash-widget-num" style="color:#713f12">${abiertas.count || 0}</div>
+      <div class="dash-widget-label">Pendientes</div>
+    </div>
+    <div class="dash-widget" style="background:#eff6ff;border:1.5px solid #bfdbfe" onclick="loadListaFiltrada('en_proceso')">
+      <div class="dash-widget-icon" style="background:#dbeafe;color:#2563eb">🔧</div>
+      <div class="dash-widget-num" style="color:#1e40af">${proceso.count || 0}</div>
+      <div class="dash-widget-label">En Proceso</div>
+    </div>
+    <div class="dash-widget" style="background:#f0fdf4;border:1.5px solid #bbf7d0" onclick="loadListaFiltrada('resuelta')">
+      <div class="dash-widget-icon" style="background:#dcfce7;color:#16a34a">✅</div>
+      <div class="dash-widget-num" style="color:#15803d">${resueltas.count || 0}</div>
+      <div class="dash-widget-label">Resueltas</div>
+    </div>
+    <div class="dash-widget" style="background:#f5f3ff;border:1.5px solid #ddd6fe" onclick="loadListaFiltrada('todas')">
+      <div class="dash-widget-icon" style="background:#ede9fe;color:#7c3aed">📋</div>
+      <div class="dash-widget-num" style="color:#4c1d95">${total.count || 0}</div>
+      <div class="dash-widget-label">Total</div>
+    </div>
+    <div class="dash-widget dash-widget-dept" style="background:#fff7ed;border:1.5px solid #fed7aa" onclick="loadDeptPage()">
+      <div style="display:flex;align-items:center;gap:10px;flex:1">
+        <div class="dash-widget-icon" style="background:#ffedd5;color:#ea580c;flex-shrink:0">🏨</div>
+        <div style="text-align:left">
+          <div style="font-size:13px;font-weight:700;color:#9a3412">Mi Departamento</div>
+          <div style="font-size:12px;color:#c2410c;margin-top:2px">${deptPend.count||0} pendientes · ${deptProc.count||0} en proceso · ${deptRes.count||0} resueltas</div>
+        </div>
+        <div style="margin-left:auto;color:#fb923c;font-size:18px">›</div>
+      </div>
+    </div>`;
+}
+
+// Vista "Incidencias de mi departamento"
+async function loadDeptPage() {
+  document.getElementById('app-content').style.overflowY = 'auto';
+  currentPageState = { page: 'dept' };
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const dept = currentUser.departamento;
+  const content = document.getElementById('app-content');
+
+  content.style.overflowY = 'hidden';
+  content.innerHTML = `
+  <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:#fff">
+      <button onclick="loadTodasPage()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:0">←</button>
+      <div style="font-size:16px;font-weight:700">Mi Departamento</div>
+    </div>
+    <div id="dept-content" style="flex:1;display:flex;flex-direction:column;padding:12px;gap:10px;min-height:0;overflow:hidden">
+      <div class="dept-stat-skeleton"></div>
+      <div class="dept-stat-skeleton"></div>
+      <div class="dept-stat-skeleton"></div>
+    </div>
+  </div>`;
+
+  const [pend, proc, res] = await Promise.all([
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('destinatario', dept).eq('estado', 'abierta'),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('destinatario', dept).eq('estado', 'en_proceso'),
+    db.from('incidencias').select('*', { count: 'exact', head: true }).eq('destinatario', dept).eq('estado', 'resuelta'),
+  ]);
+
+  const el = document.getElementById('dept-content');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="dept-stat-card" style="background:#fefce8;border:1.5px solid #fef08a" onclick="loadDeptLista('abierta')">
+      <div class="dept-stat-icon" style="background:#fef9c3;color:#ca8a04;flex-shrink:0">🕐</div>
+      <div class="dept-stat-info">
+        <div class="dept-stat-label">Pendientes</div>
+        <div class="dept-stat-num" style="color:#713f12">${pend.count || 0}</div>
+      </div>
+      <div style="margin-left:auto;color:#ca8a04;font-size:22px">›</div>
+    </div>
+    <div class="dept-stat-card" style="background:#eff6ff;border:1.5px solid #bfdbfe" onclick="loadDeptLista('en_proceso')">
+      <div class="dept-stat-icon" style="background:#dbeafe;color:#2563eb;flex-shrink:0">🔧</div>
+      <div class="dept-stat-info">
+        <div class="dept-stat-label">En Proceso</div>
+        <div class="dept-stat-num" style="color:#1e40af">${proc.count || 0}</div>
+      </div>
+      <div style="margin-left:auto;color:#2563eb;font-size:22px">›</div>
+    </div>
+    <div class="dept-stat-card" style="background:#f0fdf4;border:1.5px solid #bbf7d0" onclick="loadDeptLista('resuelta')">
+      <div class="dept-stat-icon" style="background:#dcfce7;color:#16a34a;flex-shrink:0">✅</div>
+      <div class="dept-stat-info">
+        <div class="dept-stat-label">Resueltas</div>
+        <div class="dept-stat-num" style="color:#15803d">${res.count || 0}</div>
+      </div>
+      <div style="margin-left:auto;color:#16a34a;font-size:22px">›</div>
+    </div>`;
+}
+
+async function loadDeptLista(estado) {
+  currentPageState = { page: 'dept-lista', estado };
+  document.getElementById('app-content').style.overflowY = 'auto';
+  const labels = { abierta:'Pendientes', en_proceso:'En Proceso', resuelta:'Resueltas' };
+  const content = document.getElementById('app-content');
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)">
+      <button onclick="loadDeptPage()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:0">←</button>
+      <div style="font-size:16px;font-weight:700">${labels[estado]}</div>
+    </div>
+    <div class="page" id="incidents-list"><div class="loading">Cargando...</div></div>`;
+  const { data } = await db.from('incidencias').select('*')
+    .eq('destinatario', currentUser.departamento).eq('estado', estado)
+    .order('created_at', { ascending: false });
+  const el = document.getElementById('incidents-list');
+  if (!el) return;
+  if (!data?.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Sin incidencias</div></div>'; return; }
+  el.innerHTML = data.map(renderCard).join('');
+}
+
+// ============================================================
+// LISTA FILTRADA (desde widgets o navegación)
+// ============================================================
+let filtroEstadoActual = 'todas';
+let filtroDeptActual = null;
+let sortAscending = false; // false = más reciente primero
+
+async function loadListaFiltrada(filtroEstado, dept) {
+  document.getElementById('app-content').style.overflowY = 'auto';
+  filtroEstadoActual = filtroEstado || 'todas';
+  filtroDeptActual = dept || null;
+  currentPageState = { page: 'lista', filtroEstado, dept };
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+
+  const content = document.getElementById('app-content');
+  const labels = { todas:'Todas las incidencias', abierta:'Abiertas', en_proceso:'En proceso', resuelta:'Resueltas' };
+  const titulo = labels[filtroEstadoActual] || filtroEstadoActual;
+
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)">
+      <button onclick="loadTodasPage()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:0">←</button>
+      <div style="font-size:16px;font-weight:700;flex:1">${titulo}</div>
+      <button onclick="toggleSort()" id="sort-btn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">${sortAscending ? '↑ Antigua' : '↓ Reciente'}</button>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-chip ${!filtroDeptActual ? 'active' : ''}" onclick="loadListaFiltrada(filtroEstadoActual,null)">Todos</button>
+      <button class="filter-chip ${filtroDeptActual==='recepcion'?'active':''}" onclick="loadListaFiltrada(filtroEstadoActual,'recepcion')">🛎️ Recepción</button>
+      <button class="filter-chip ${filtroDeptActual==='mantenimiento'?'active':''}" onclick="loadListaFiltrada(filtroEstadoActual,'mantenimiento')">🔧 Mantenimiento</button>
+      <button class="filter-chip ${filtroDeptActual==='housekeeping'?'active':''}" onclick="loadListaFiltrada(filtroEstadoActual,'housekeeping')">🧹 Housekeeping</button>
+      <button class="filter-chip ${filtroDeptActual==='direccion'?'active':''}" onclick="loadListaFiltrada(filtroEstadoActual,'direccion')">👔 Dirección</button>
+      <button class="filter-chip ${filtroDeptActual==='fb'?'active':''}" onclick="loadListaFiltrada(filtroEstadoActual,'fb')">🍽️ F&B</button>
+    </div>
+    <div class="page" id="incidents-list"><div class="loading">Cargando...</div></div>
+  `;
+  await renderIncidentsList();
+}
+async function renderIncidentsList() {
+  let query = db.from('incidencias').select('id,local,descripcion,destinatario,estado,usuario_nombre,created_at,foto1,foto2,foto3').order('created_at', { ascending: sortAscending }).limit(50);
+  if (['abierta','en_proceso','resuelta'].includes(filtroEstadoActual)) query = query.eq('estado', filtroEstadoActual);
+  if (filtroDeptActual) query = query.eq('destinatario', filtroDeptActual);
+
+  const { data, error } = await query;
+  const el = document.getElementById('incidents-list');
+  if (!el) return;
+  if (error || !data?.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No hay incidencias</div></div>'; return; }
+  el.innerHTML = data.map(renderCard).join('');
+}
+
+function toggleSort() {
+  sortAscending = !sortAscending;
+  const btn = document.getElementById('sort-btn');
+  if (btn) btn.textContent = sortAscending ? '↑ Antigua' : '↓ Reciente';
+  renderIncidentsList();
+}
+
+// ============================================================
+// MIS INCIDENCIAS
+// ============================================================
+async function loadMisPage() {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('app-content').style.overflowY = 'auto';
+  document.getElementById('nav-mis').classList.add('active');
+  currentPageState = { page: 'mis' };
+
+  const content = document.getElementById('app-content');
+  content.innerHTML = `
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:16px;font-weight:700">📌 Para mi departamento</div>
+    <div class="page" id="mis-list"><div class="loading">Cargando...</div></div>
+  `;
+
+  const { data } = await db.from('incidencias').select('id,local,descripcion,destinatario,estado,usuario_nombre,created_at,foto1,foto2,foto3').eq('destinatario', currentUser.departamento).neq('estado','resuelta').order('created_at', { ascending: false }).limit(50);
+  const el = document.getElementById('mis-list');
+  if (!el) return;
+  if (!data?.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No hay incidencias para tu departamento</div></div>'; return; }
+  el.innerHTML = data.map(renderCard).join('');
+}
+
+// ============================================================
+// RENDER CARD
+// ============================================================
+function renderCard(inc) {
+  const photoCount = [inc.foto1, inc.foto2, inc.foto3].filter(Boolean).length;
+  const photoIndicator = photoCount > 0 ? `<span style="font-size:12px;color:var(--text3);margin-left:4px">📷 ${photoCount}</span>` : '';
+  return `
+    <div class="incident-card" onclick="openDetail('${inc.id}')">
+      <div class="card-top">
+        <span class="card-dept dept-${inc.destinatario}">${deptLabel(inc.destinatario)}</span>
+        <span class="card-time">${timeAgo(inc.created_at)}</span>
+      </div>
+      ${inc.local ? `<div style="font-size:12px;color:var(--text2);margin-bottom:4px">📍 ${inc.local}</div>` : ''}
+      <div class="card-desc">${inc.descripcion}</div>
+      <div class="card-bottom">
+        <span class="card-author">Por ${inc.usuario_nombre || 'Desconocido'}${photoIndicator}</span>
+        <span class="card-status status-${inc.estado}">${inc.estado.replace('_',' ')}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// DETALLE INCIDENCIA
+// ============================================================
+async function openDetail(id) {
+  currentIncidentId = id;
+  const { data: inc } = await db.from('incidencias').select('*').eq('id', id).single();
+  const { data: comments } = await db.from('comentarios').select('*').eq('incidencia_id', id).order('created_at');
+
+  const photos = [inc.foto1, inc.foto2, inc.foto3].filter(Boolean);
+  const canChangeStatus = currentUser.departamento === inc.destinatario || currentUser.departamento === 'admin';
+
+  const statusBtns = canChangeStatus ? `
+    <div class="detail-section">Cambiar estado</div>
+    <div class="btn-row">
+      ${inc.estado !== 'abierta' ? `<button class="btn btn-danger" style="font-size:13px;padding:10px" onclick="changeStatus('${id}','abierta')">Abierta</button>` : ''}
+      ${inc.estado !== 'en_proceso' ? `<button class="btn btn-warning" style="font-size:13px;padding:10px" onclick="changeStatus('${id}','en_proceso')">En proceso</button>` : ''}
+      ${inc.estado !== 'resuelta' ? `<button class="btn btn-success" style="font-size:13px;padding:10px" onclick="changeStatus('${id}','resuelta')">Resuelta</button>` : ''}
+    </div>
+  ` : '';
+
+  const canDelete = ['admin','direccion'].includes(currentUser.departamento);
+  const deleteBtn = canDelete ? `<button onclick="deleteIncident('${id}')" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑 Eliminar</button>` : '';
+
+  document.getElementById('detalle-content').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin:0">Incidencia</div>
+      <button onclick="closeModal('modal-detalle')" style="background:#f1f5f9;border:none;color:#475569;font-size:18px;font-weight:700;cursor:pointer;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    ${canDelete ? `<div style="margin-bottom:14px">${deleteBtn}</div>` : ''}
+
+    ${photos.length ? `<div class="detail-photos">${photos.map(p => `<img class="detail-photo" src="${p}" onclick="openLightbox('${p}')" style="cursor:zoom-in">`).join('')}</div>` : ''}
+
+    <div class="detail-meta">
+      <span class="card-dept dept-${inc.destinatario}">${deptLabel(inc.destinatario)}</span>
+      <span class="card-status status-${inc.estado}">${inc.estado.replace('_',' ')}</span>
+    </div>
+
+    ${inc.local ? `<div style="font-size:13px;color:var(--text2);margin-bottom:10px">📍 ${inc.local}</div>` : ''}
+    <div class="detail-desc">${inc.descripcion}</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:6px">✍️ Creada por <strong>${inc.usuario_nombre}</strong> · ${fmtDateTime(inc.created_at)}</div>
+    ${inc.estado_usuario ? `<div style="font-size:12px;color:var(--text3);margin-bottom:16px">🔄 Actualizada por <strong>${inc.estado_usuario}</strong> · ${fmtDateTime(inc.estado_fecha)}</div>` : '<div style="margin-bottom:16px"></div>'}
+
+    ${statusBtns}
+
+    <div class="detail-section" style="margin-top:16px">Comentarios (${comments?.length || 0})</div>
+    <div id="comments-list">
+      ${comments?.length ? comments.map(c => `
+        <div class="comment">
+          <div class="comment-author">${c.usuario_nombre}</div>
+          <div class="comment-text">${c.texto}</div>
+          <div class="comment-time">${timeAgo(c.created_at)}</div>
+        </div>
+      `).join('') : '<div style="color:var(--text3);font-size:13px;margin-bottom:12px">Sin comentarios</div>'}
+    </div>
+    <div class="comment-input-row">
+      <input class="form-input" id="comment-input" placeholder="Añadir comentario...">
+      <button class="comment-send" onclick="sendComment()">➤</button>
+    </div>
+  `;
+
+  openModal('modal-detalle');
+}
+
+async function changeStatus(id, status) {
+  const updateData = {
+    estado: status,
+    updated_at: new Date().toISOString(),
+    estado_usuario: currentUser.nombre,
+    estado_fecha: new Date().toISOString()
+  };
+  await db.from('incidencias').update(updateData).eq('id', id);
+  showToast(`Estado actualizado: ${status.replace('_',' ')}`);
+  closeModal('modal-detalle');
+  refreshCurrentPage();
+}
+
+async function deleteIncident(id) {
+  if (!confirm('¿Eliminar esta incidencia? Esta acción no se puede deshacer.')) return;
+  await Promise.all([
+    db.from('notificaciones').delete().eq('incidencia_id', id),
+    db.from('comentarios').delete().eq('incidencia_id', id),
+  ]);
+  await db.from('incidencias').delete().eq('id', id);
+  showToast('🗑 Incidencia eliminada');
+  closeModal('modal-detalle');
+  currentIncidentId = null;
+  // Esperar a que Supabase procese el borrado antes de refrescar
+  await new Promise(r => setTimeout(r, 600));
+  const p = currentPageState;
+  if (p.page === 'dashboard') loadTodasPage();
+  else if (p.page === 'lista') renderIncidentsList();
+  else if (p.page === 'mis') loadMisPage();
+  else if (p.page === 'dept') loadDeptPage();
+  else if (p.page === 'dept-lista') loadDeptLista(p.estado);
+  else loadTodasPage();
+  loadNotifCount();
+}
+
+async function sendComment() {
+  const input = document.getElementById('comment-input');
+  const texto = input.value.trim();
+  if (!texto) return;
+  await db.from('comentarios').insert({ incidencia_id: currentIncidentId, usuario_nombre: currentUser.nombre, texto });
+  input.value = '';
+  openDetail(currentIncidentId);
+}
+
+// ============================================================
+// PUSH via OneSignal
+// ============================================================
+async function enviarPush(mensaje) {
+  try {
+    await fetch('https://api.onesignal.com/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Key os_v2_app_nimkh6qo2rhdbbc47pprvitgac7c6zfhtssewyfcv6i23uepsegqqcfzma2grzlf5qbbb5cbty3uf37sm3wrqqcjnyul3nwwtw44yoi' },
+      body: JSON.stringify({
+        app_id: "ee6e5a9c-4ee1-45ff-b37a-13c872328a4a",
+        included_segments: ['Total Subscriptions'],
+        contents: { en: mensaje, es: mensaje },
+        headings: { en: '🏨 Incidencias Hotel', es: '🏨 Incidencias Hotel' },
+      })
+    });
+  } catch(e) { console.log('Push error:', e); }
+}
+
+// NUEVA INCIDENCIA
+// ============================================================
+function openNewIncident() {
+  selectedDept = null;
+  photos = [null, null, null];
+  document.getElementById('nueva-local').value = '';
+  document.getElementById('nueva-desc').value = '';
+  document.querySelectorAll('.dept-option').forEach(o => o.classList.remove('selected'));
+  for (let i = 0; i < 3; i++) resetPhotoSlot(i);
+  openModal('modal-nueva');
+}
+
+function selectDept(dept) {
+  selectedDept = dept;
+  document.querySelectorAll('.dept-option').forEach(o => o.classList.remove('selected'));
+  document.getElementById(`opt-${dept}`).classList.add('selected');
+}
+
+function triggerPhoto(slot) {
+  currentPhotoSlot = slot;
+  // Mostrar mini menú: cámara o galería
+  const existing = document.getElementById('photo-menu');
+  if (existing) existing.remove();
+  const menu = document.createElement('div');
+  menu.id = 'photo-menu';
+  menu.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  menu.innerHTML = `
+    <div style="background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px 16px 32px">
+      <div style="font-size:14px;font-weight:700;color:#64748b;text-align:center;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px">Añadir foto</div>
+      <button onclick="document.getElementById('photo-input-cam').click();document.getElementById('photo-menu').remove()" style="width:100%;background:#f1f5f9;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:600;margin-bottom:10px;cursor:pointer;font-family:DM Sans,sans-serif">📷 Hacer foto</button>
+      <button onclick="document.getElementById('photo-input-gal').click();document.getElementById('photo-menu').remove()" style="width:100%;background:#f1f5f9;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:600;margin-bottom:10px;cursor:pointer;font-family:DM Sans,sans-serif">🖼️ Elegir de galería</button>
+      <button onclick="document.getElementById('photo-menu').remove()" style="width:100%;background:transparent;border:none;padding:12px;font-size:15px;color:#94a3b8;cursor:pointer;font-family:DM Sans,sans-serif">Cancelar</button>
+    </div>`;
+  menu.addEventListener('click', function(e){ if(e.target===this) this.remove(); });
+  document.body.appendChild(menu);
+}
+
+// Comprimir imagen antes de subir (máx 1200px, calidad 0.75)
+function comprimirImagen(file, maxSize = 1200, quality = 0.75) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => {
+          const comprimido = new File([blob], file.name, { type: 'image/jpeg' });
+          resolve({ file: comprimido, preview: canvas.toDataURL('image/jpeg', quality) });
+        }, 'image/jpeg', quality);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function handlePhoto(e, origen) {
+  const file = e.target.files[0];
+  if (!file) return;
+  comprimirImagen(file).then(({ file: comprimido, preview }) => {
+    photos[currentPhotoSlot] = { file: comprimido, preview };
+    const slot = document.getElementById(`slot${currentPhotoSlot}`);
+    slot.innerHTML = `<img src="${preview}"><div class="remove-photo" onclick="event.stopPropagation();removePhoto(${currentPhotoSlot})">✕</div>`;
+  });
+  e.target.value = '';
+}
+
+function removePhoto(slot) {
+  photos[slot] = null;
+  resetPhotoSlot(slot);
+}
+
+function resetPhotoSlot(slot) {
+  const el = document.getElementById(`slot${slot}`);
+  el.innerHTML = '📷';
+}
+
+async function submitIncident() {
+  const local = document.getElementById('nueva-local').value.trim();
+  const desc = document.getElementById('nueva-desc').value.trim();
+  if (!local) { showToast('Por favor indica el local o ubicación'); return; }
+  if (!desc) { showToast('Por favor escribe una descripción'); return; }
+  if (!selectedDept) { showToast('Selecciona un destinatario'); return; }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  // Subir fotos al Storage y obtener URLs públicas
+  btn.textContent = 'Subiendo fotos...';
+  const fotoUrls = [];
+  for (const photo of photos) {
+    if (!photo) { fotoUrls.push(null); continue; }
+    try {
+      const ext = photo.file.name.split('.').pop() || 'jpg';
+      const path = `${currentUser.id}/${Date.now()}_${fotoUrls.length}.${ext}`;
+      const { error: upErr } = await db.storage.from('fotos-incidencias').upload(path, photo.file, { contentType: photo.file.type });
+      if (upErr) { fotoUrls.push(null); continue; }
+      const { data: urlData } = db.storage.from('fotos-incidencias').getPublicUrl(path);
+      fotoUrls.push(urlData.publicUrl);
+    } catch { fotoUrls.push(null); }
+  }
+
+  btn.textContent = 'Guardando...';
+  const payload = {
+    local: local,
+    descripcion: desc,
+    destinatario: selectedDept,
+    usuario_id: currentUser.id,
+    usuario_nombre: currentUser.nombre,
+    foto1: fotoUrls[0] || null,
+    foto2: fotoUrls[1] || null,
+    foto3: fotoUrls[2] || null,
+  };
+
+  const { data: inc, error } = await db.from('incidencias').insert(payload).select().single();
+
+  if (!error && inc) {
+    // Crear notificaciones para todos los usuarios del departamento destino
+    const targets = allUsers.filter(u => u.departamento === selectedDept || u.departamento === 'admin' || u.departamento === 'direccion');
+    if (targets.length) {
+      await db.from('notificaciones').insert(targets.map(u => ({
+        usuario_id: u.id,
+        incidencia_id: inc.id,
+        texto: `Nueva incidencia de ${currentUser.nombre}: "${desc.substring(0,60)}${desc.length>60?'...':''}"`
+      })));
+    }
+    enviarPush(`Nueva incidencia de ${currentUser.nombre}: ${desc.substring(0,80)}`);
+    showToast('✅ Incidencia enviada');
+    closeModal('modal-nueva');
+    loadTodasPage();
+  } else {
+    showToast('❌ Error al enviar');
+  }
+  btn.disabled = false; btn.textContent = 'Enviar';
+}
+
+// ============================================================
+// NOTIFICACIONES
+// ============================================================
+async function loadNotifCount() {
+  if (!currentUser) return;
+  const { count } = await db.from('notificaciones').select('*', { count: 'exact', head: true }).eq('usuario_id', currentUser.id).eq('leida', false);
+  const navBadge = document.getElementById('nav-badge-notif');
+  if (navBadge) {
+    if (count > 0) {
+      navBadge.textContent = count > 9 ? '9+' : count;
+      navBadge.classList.remove('hidden');
+    } else {
+      navBadge.classList.add('hidden');
+    }
+  }
+}
+
+async function loadNotificacionesPage() {
+  // Mostrar popup con la notificación más reciente no leída
+  const { data } = await db.from('notificaciones').select('*')
+    .eq('usuario_id', currentUser.id)
+    .eq('leida', false)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (!data?.length) {
+    showToast('No tienes notificaciones nuevas');
+    return;
+  }
+
+  const n = data[0];
+  const existing = document.getElementById('notif-popup');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'notif-popup';
+  popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px';
+  popup.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <div style="font-size:32px;text-align:center;margin-bottom:12px">🔔</div>
+      <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;text-align:center">Nueva Incidencia</div>
+      <div style="font-size:14px;color:#475569;line-height:1.5;margin-bottom:8px;text-align:center">${n.texto}</div>
+      <div style="font-size:12px;color:#94a3b8;text-align:center;margin-bottom:20px">${timeAgo(n.created_at)}</div>
+      <div style="display:flex;gap:10px">
+        <button onclick="markRead('${n.id}');document.getElementById('notif-popup').remove();loadNotifCount()" style="flex:1;padding:12px;background:#f1f5f9;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Cerrar</button>
+        <button onclick="markRead('${n.id}');document.getElementById('notif-popup').remove();openDetail('${n.incidencia_id}');loadNotifCount()" style="flex:1;padding:12px;background:#3b82f6;color:white;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Ver incidencia</button>
+      </div>
+    </div>
+  `;
+  popup.addEventListener('click', function(e) {
+    if (e.target === this) {
+      markAllRead();
+      this.remove();
+    }
+  });
+  document.body.appendChild(popup);
+}
+
+async function markRead(id) {
+  await db.from('notificaciones').update({ leida: true }).eq('id', id);
+  loadNotifCount();
+}
+
+async function markAllRead() {
+  await db.from('notificaciones').update({ leida: true }).eq('usuario_id', currentUser.id).eq('leida', false);
+  loadNotifCount();
+  loadNotificacionesPage();
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+async function loadAdminPage() {
+  document.getElementById('app-content').style.overflowY = 'auto';
+  if (currentUser.departamento !== 'admin') return;
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-config').classList.add('active');
+
+  const { data: users } = await db.from('usuarios').select('*').order('nombre');
+  const content = document.getElementById('app-content');
+  content.innerHTML = `
+    <div style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:18px;font-weight:700">⚙️ Usuarios</div>
+        <button class="btn btn-primary" style="width:auto;padding:10px 16px" onclick="openNewUser()">+ Nuevo</button>
+      </div>
+      ${users.map(u => `
+        <div class="admin-user-item">
+          <div class="user-avatar" style="background:${avatarColor(u.departamento)};color:white;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">
+            ${u.nombre.charAt(0).toUpperCase()}
+          </div>
+          <div class="admin-user-info">
+            <div class="admin-user-name">${u.nombre}</div>
+            <div class="admin-user-dept">${deptLabel(u.departamento)} · PIN: ${'•'.repeat(4)}</div>
+          </div>
+          <div class="admin-actions">
+            <div class="icon-btn" onclick="editUser('${u.id}')">✏️</div>
+            ${u.id !== currentUser.id ? `<div class="icon-btn" onclick="toggleUser('${u.id}',${u.activo})">${u.activo ? '🚫' : '✅'}</div>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function openNewUser() {
+  document.getElementById('modal-usuario-title').textContent = 'Nuevo Usuario';
+  document.getElementById('edit-user-id').value = '';
+  document.getElementById('user-nombre').value = '';
+  document.getElementById('user-pin').value = '';
+  document.getElementById('user-dept').value = 'recepcion';
+  openModal('modal-usuario');
+}
+
+async function editUser(id) {
+  const u = await db.from('usuarios').select('*').eq('id', id).single();
+  if (u.error) return;
+  document.getElementById('modal-usuario-title').textContent = 'Editar Usuario';
+  document.getElementById('edit-user-id').value = id;
+  document.getElementById('user-nombre').value = u.data.nombre;
+  document.getElementById('user-pin').value = u.data.pin;
+  document.getElementById('user-dept').value = u.data.departamento;
+  openModal('modal-usuario');
+}
+
+async function saveUser() {
+  const id = document.getElementById('edit-user-id').value;
+  const nombre = document.getElementById('user-nombre').value.trim();
+  const pin = document.getElementById('user-pin').value.trim();
+  const departamento = document.getElementById('user-dept').value;
+
+  if (!nombre || !pin) { showToast('Rellena todos los campos'); return; }
+  if (pin.length !== 4 || !/^\d+$/.test(pin)) { showToast('El PIN debe tener 4 dígitos'); return; }
+
+  if (id) {
+    await db.from('usuarios').update({ nombre, pin, departamento }).eq('id', id);
+  } else {
+    await db.from('usuarios').insert({ nombre, pin, departamento });
+  }
+
+  closeModal('modal-usuario');
+  showToast('✅ Usuario guardado');
+  await loadUsers();
+  loadAdminPage();
+}
+
+async function toggleUser(id, activo) {
+  await db.from('usuarios').update({ activo: !activo }).eq('id', id);
+  await loadUsers();
+  loadAdminPage();
+}
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) closeModal(this.id);
+  });
+});
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ============================================================
+// PWA: Manifest inline (para Android)
+// ============================================================
+(function() {
+  const manifest = {
+    name: 'Incidencias Hotel',
+    short_name: 'Incidencias',
+    description: 'Sistema de gestión de incidencias hoteleras',
+    start_url: './',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#1e293b',
+    theme_color: '#1e293b',
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%233b82f6'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle'%3E%F0%9F%8F%A8%3C/text%3E%3C/svg%3E",
+        sizes: '192x192',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      },
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%233b82f6'/%3E%3Ctext x='256' y='360' font-size='300' text-anchor='middle'%3E%F0%9F%8F%A8%3C/text%3E%3C/svg%3E",
+        sizes: '512x512',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  document.getElementById('pwa-manifest').href = url;
+})();
+
+// ============================================================
+// PWA: Service Worker (para que Android permita instalación)
+// ============================================================
+// Service Worker no disponible en modo archivo local
+
+// ============================================================
+// INIT - iPhone/Safari compatible
+// ============================================================
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadUsers);
+} else {
+  loadUsers();
+}
+</script>
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="">
+</div>
+</body>
+</html>
