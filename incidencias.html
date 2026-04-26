@@ -1487,15 +1487,14 @@ async function sendComment() {
 // ============================================================
 async function enviarPush(mensaje) {
   try {
-    await fetch('https://api.onesignal.com/notifications', {
+    // Usamos Supabase Edge Function como proxy para evitar CORS
+    await fetch('https://tkqxrjhbolauquirmojc.supabase.co/functions/v1/send-push', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Key os_v2_app_nimkh6qo2rhdbbc47pprvitgac7c6zfhtssewyfcv6i23uepsegqqcfzma2grzlf5qbbb5cbty3uf37sm3wrqqcjnyul3nwwtw44yoi' },
-      body: JSON.stringify({
-        app_id: "ee6e5a9c-4ee1-45ff-b37a-13c872328a4a",
-        included_segments: ['Total Subscriptions'],
-        contents: { en: mensaje, es: mensaje },
-        headings: { en: '🏨 Incidencias Hotel', es: '🏨 Incidencias Hotel' },
-      })
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer sb_publishable_efS_3aNiJS9MiYcxd6lzSw_a8fxonOm'
+      },
+      body: JSON.stringify({ mensaje })
     });
   } catch(e) { console.log('Push error:', e); }
 }
