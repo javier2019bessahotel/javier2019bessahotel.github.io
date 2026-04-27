@@ -10,13 +10,6 @@
 <meta name="theme-color" content="#1e293b">
 <link id="pwa-manifest" rel="manifest">
 <title>Incidencias Hotel</title>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({ appId: "ee6e5a9c-4ee1-45ff-b37a-13c872328a4a" });
-  });
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1049,11 +1042,15 @@ function enterApp() {
   loadNotifCount();
   setupRealtime();
 
+  // Pedir permiso de notificaciones push
+  requestNotifPermission(currentUser.id, currentUser.departamento);
 }
 
 function logout() {
   currentUser = null; selectedLoginUser = null; pinValue = '';
   if (realtimeChannel) db.removeChannel(realtimeChannel);
+  // Avisar al SW que cierre la conexión realtime
+  if (swRegistration?.active) swRegistration.active.postMessage({ type: 'LOGOUT' });
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pin-section').style.display = 'none';
@@ -1117,15 +1114,69 @@ function showPage(page) {
   else if (page === 'admin') { document.getElementById('nav-config').classList.add('active'); loadAdminPage(); }
 }
 
-// Config: solo admin puede entrar
+// Config: admin ve panel admin, resto ve ajustes de notificaciones
 function onConfigClick() {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-config').classList.add('active');
   if (currentUser.departamento === 'admin') {
-    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    document.getElementById('nav-config').classList.add('active');
     loadAdminPage();
   } else {
-    showToast('Solo el administrador puede acceder a esta sección');
+    loadConfigPage();
   }
+}
+
+async function loadConfigPage() {
+  const content = document.getElementById('app-content');
+  content.style.overflowY = 'auto';
+
+  const permission = ('Notification' in window) ? Notification.permission : 'no-soportado';
+  const swActivo = swRegistration ? '✅ Activo' : '❌ No registrado';
+
+  let notifBtnHtml = '';
+  if (!('Notification' in window)) {
+    notifBtnHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px;color:#991b1b;font-size:13px">❌ Este navegador no soporta notificaciones push. Asegúrate de abrir la app desde el icono de la pantalla de inicio, no desde Safari.</div>`;
+  } else if (permission === 'granted') {
+    notifBtnHtml = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px;color:#166534;font-size:14px;font-weight:600">✅ Notificaciones activadas</div>`;
+  } else if (permission === 'denied') {
+    notifBtnHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px;color:#991b1b;font-size:13px">🚫 Has bloqueado las notificaciones. Ve a Ajustes del móvil → Safari/Chrome → Notificaciones y actívalas manualmente.</div>`;
+  } else {
+    notifBtnHtml = `<button class="btn btn-primary" onclick="activarNotificaciones()">🔔 Activar notificaciones</button>`;
+  }
+
+  content.innerHTML = `
+    <div style="padding:16px">
+      <div style="font-size:18px;font-weight:700;margin-bottom:20px">⚙️ Ajustes</div>
+
+      <div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">Notificaciones Push</div>
+        ${notifBtnHtml}
+        <div style="margin-top:10px;font-size:11px;color:var(--text3)">Estado SW: ${swActivo} · Permiso: ${permission}</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Usuario</div>
+        <div style="font-size:15px;font-weight:600">${currentUser.nombre}</div>
+        <div style="font-size:13px;color:var(--text2)">${deptLabel(currentUser.departamento)}</div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="logout()" style="margin-top:8px">⏻ Cerrar sesión</button>
+    </div>
+  `;
+}
+
+async function activarNotificaciones() {
+  if (!('Notification' in window)) {
+    showToast('Tu navegador no soporta notificaciones');
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    await requestNotifPermission(currentUser.id, currentUser.departamento);
+    showToast('✅ Notificaciones activadas');
+  } else {
+    showToast('❌ Permiso denegado');
+  }
+  loadConfigPage();
 }
 
 // ============================================================
@@ -1483,22 +1534,6 @@ async function sendComment() {
 }
 
 // ============================================================
-// PUSH via OneSignal
-// ============================================================
-async function enviarPush(mensaje) {
-  try {
-    // Usamos Supabase Edge Function como proxy para evitar CORS
-    await fetch('https://tkqxrjhbolauquirmojc.supabase.co/functions/v1/send-push', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrcXhyamhib2xhdXF1aXJtb2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NjgzMDAsImV4cCI6MjA5MjA0NDMwMH0.zA70V172WdEV5gLGwXPxxTefc10iFmwMvlf9y4IOGgU'
-      },
-      body: JSON.stringify({ mensaje })
-    });
-  } catch(e) { console.log('Push error:', e); }
-}
-
 // NUEVA INCIDENCIA
 // ============================================================
 function openNewIncident() {
@@ -1633,7 +1668,6 @@ async function submitIncident() {
         texto: `Nueva incidencia de ${currentUser.nombre}: "${desc.substring(0,60)}${desc.length>60?'...':''}"`
       })));
     }
-    enviarPush(`Nueva incidencia de ${currentUser.nombre}: ${desc.substring(0,80)}`);
     showToast('✅ Incidencia enviada');
     closeModal('modal-nueva');
     loadTodasPage();
@@ -1869,9 +1903,45 @@ function closeLightbox() {
 })();
 
 // ============================================================
-// PWA: Service Worker (para que Android permita instalación)
+// PWA: Service Worker + Notificaciones Push Nativas
 // ============================================================
-// Service Worker no disponible en modo archivo local
+let swRegistration = null;
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    swRegistration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    console.log('[SW] Registrado:', swRegistration.scope);
+  } catch (e) {
+    console.warn('[SW] Error al registrar:', e);
+  }
+}
+
+async function requestNotifPermission(userId, departamento) {
+  if (!('Notification' in window)) return;
+  if (!swRegistration) return;
+
+  let permission = Notification.permission;
+
+  if (permission === 'default') {
+    permission = await Notification.requestPermission();
+  }
+
+  if (permission === 'granted') {
+    // Avisar al Service Worker quién es el usuario
+    const sw = swRegistration.active || swRegistration.installing || swRegistration.waiting;
+    if (sw) {
+      sw.postMessage({ type: 'INIT_NOTIF', userId, departamento });
+    }
+    // También enviar cuando el SW esté listo
+    navigator.serviceWorker.ready.then(reg => {
+      if (reg.active) reg.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
+    });
+  }
+}
+
+// Registrar SW al cargar la página
+registerServiceWorker();
 
 // ============================================================
 // INIT - iPhone/Safari compatible
