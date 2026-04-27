@@ -1991,12 +1991,24 @@ async function requestNotifPermission(userId, departamento) {
     // Guardar en Supabase
     await guardarSuscripcion(userId, subscription);
 
-    // También mantener el WebSocket para cuando la app está abierta
-    if (reg.active) {
-      reg.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
-    }
+    // Enviar userId al SW para el WebSocket (con reintentos)
+    const enviarAlSW = (r) => {
+      if (r && r.active) r.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
+    };
+    enviarAlSW(reg);
+    setTimeout(() => enviarAlSW(reg), 1000);
+    setTimeout(() => enviarAlSW(reg), 3000);
   } catch(e) {
     console.warn('[Push] Error al suscribir:', e);
+    // Aunque falle el VAPID, intentar el WebSocket igualmente
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg.active) reg.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
+      setTimeout(async () => {
+        const r = await navigator.serviceWorker.ready;
+        if (r.active) r.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
+      }, 2000);
+    } catch(e2) {}
   }
 }
 
