@@ -1968,7 +1968,7 @@ async function guardarSuscripcion(userId, subscription) {
 }
 
 async function requestNotifPermission(userId, departamento) {
-  if (!('Notification' in window) || !('PushManager' in window)) return;
+  if (!('Notification' in window)) return;
 
   let permission = Notification.permission;
   if (permission === 'default') {
@@ -1976,40 +1976,20 @@ async function requestNotifPermission(userId, departamento) {
   }
   if (permission !== 'granted') return;
 
-  try {
-    const reg = await navigator.serviceWorker.ready;
-
-    // Suscribir al push VAPID
-    let subscription = await reg.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
+  // Enviar userId al SW con reintentos para asegurar que llega
+  const enviarAlSW = (reg) => {
+    if (reg && reg.active) {
+      reg.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
     }
+  };
 
-    // Guardar en Supabase
-    await guardarSuscripcion(userId, subscription);
+  if (swRegistration) enviarAlSW(swRegistration);
 
-    // Enviar userId al SW para el WebSocket (con reintentos)
-    const enviarAlSW = (r) => {
-      if (r && r.active) r.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
-    };
+  navigator.serviceWorker.ready.then(reg => {
     enviarAlSW(reg);
     setTimeout(() => enviarAlSW(reg), 1000);
     setTimeout(() => enviarAlSW(reg), 3000);
-  } catch(e) {
-    console.warn('[Push] Error al suscribir:', e);
-    // Aunque falle el VAPID, intentar el WebSocket igualmente
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      if (reg.active) reg.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
-      setTimeout(async () => {
-        const r = await navigator.serviceWorker.ready;
-        if (r.active) r.active.postMessage({ type: 'INIT_NOTIF', userId, departamento });
-      }, 2000);
-    } catch(e2) {}
-  }
+  });
 }
 
 // Registrar SW al cargar la página
