@@ -1662,11 +1662,30 @@ async function submitIncident() {
     // Crear notificaciones para todos los usuarios del departamento destino
     const targets = allUsers.filter(u => u.departamento === selectedDept || u.departamento === 'admin' || u.departamento === 'direccion');
     if (targets.length) {
+      const textoNotif = `Nueva incidencia de ${currentUser.nombre}: "${desc.substring(0,60)}${desc.length>60?'...':''}"`;
       await db.from('notificaciones').insert(targets.map(u => ({
         usuario_id: u.id,
         incidencia_id: inc.id,
-        texto: `Nueva incidencia de ${currentUser.nombre}: "${desc.substring(0,60)}${desc.length>60?'...':''}"`
+        texto: textoNotif
       })));
+
+      // Enviar push VAPID a todos los dispositivos suscritos
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_KEY}`
+          },
+          body: JSON.stringify({
+            usuario_ids: targets.map(u => u.id),
+            texto: textoNotif,
+            incidencia_id: inc.id
+          })
+        });
+      } catch(e) {
+        console.warn('[Push] Error enviando push:', e);
+      }
     }
     showToast('✅ Incidencia enviada');
     closeModal('modal-nueva');
